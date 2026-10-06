@@ -1,0 +1,2044 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aviator - Admin Panel</title>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+        background-color: #0f111a;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .admin-container {
+        background-color: #1a1d2d;
+        width: 100%;
+        max-width: 500px;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border: 1px solid #2d324f;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .header h1 {
+        color: #e50b2e;
+        font-size: 24px;
+        font-weight: 900;
+        font-style: italic;
+        margin-bottom: 5px;
+    }
+
+    .header p {
+        color: #8e90c6;
+        font-size: 14px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #ccc;
+        font-size: 14px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        background-color: #0f111a;
+        border: 1px solid #3b3c68;
+        border-radius: 8px;
+        color: white;
+        font-size: 16px;
+        outline: none;
+    }
+
+    .form-group input:focus {
+        border-color: #28a745;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+        color: white;
+    }
+
+    .btn:active {
+        transform: scale(0.98);
+    }
+
+    .btn-search {
+        background-color: #4078c0;
+        margin-bottom: 10px;
+    }
+
+    .user-card {
+        background-color: #222538;
+        border: 1px dashed #4078c0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+    }
+
+    .user-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 15px;
+    }
+    
+    .user-info span.label {
+        color: #8e90c6;
+    }
+
+    .user-info span.value {
+        font-weight: bold;
+        color: #fff;
+    }
+
+    .balance-display {
+        font-size: 24px;
+        color: #28a745;
+        font-weight: bold;
+        text-align: center;
+        margin: 15px 0;
+        padding: 10px;
+        background: #0f111a;
+        border-radius: 8px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .verification-panel {
+        background: #0f111a;
+        border: 1px solid #3b3c68;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 15px;
+    }
+
+    .btn-add { background-color: #28a745; flex: 1; }
+    .btn-deduct { background-color: #e50b2e; flex: 1; }
+
+    .status-msg {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 14px;
+        font-weight: bold;
+        min-height: 20px;
+    }
+
+    .btn-deposits {
+        background-color: #7b55c7;
+        margin-top: 18px;
+    }
+
+    .btn-history {
+        background-color: #4078c0;
+        margin-top: 10px;
+    }
+
+    .deposit-list {
+        display: none;
+        margin-top: 16px;
+    }
+
+    .deposit-item {
+        background: #222538;
+        border: 1px solid #3b3c68;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .deposit-item p {
+        margin: 0 0 8px;
+        color: #ccc;
+    }
+
+    .deposit-item strong {
+        color: #fff;
+    }
+
+    .deposit-receipt {
+        display: inline-block;
+        color: #8dbbff;
+        margin: 4px 0 12px;
+    }
+
+    .deposit-receipt img {
+        display: block;
+        max-width: 100%;
+        max-height: 220px;
+        margin-top: 8px;
+        border-radius: 6px;
+    }
+
+    .deposit-actions button {
+        width: auto;
+        padding: 9px 12px;
+        margin: 4px 6px 0 0;
+        font-size: 14px;
+    }
+
+    .btn-approve { background-color: #28a745; }
+    .btn-reject { background-color: #e50b2e; }
+
+    .support-panel {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #3b3c68;
+    }
+
+    .support-warning {
+        color: #ffcc80;
+        font-size: 12px;
+        line-height: 1.5;
+        margin: 10px 0;
+    }
+
+    .mobcash-panel {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #3b3c68;
+    }
+
+    .mobcash-card {
+        width: 100%;
+        padding: 14px;
+        margin: 10px 0;
+        background: #222538;
+        color: #fff;
+        border: 1px solid #3b3c68;
+        border-radius: 8px;
+        text-align: left;
+        cursor: pointer;
+        overflow-wrap: anywhere;
+    }
+
+    .mobcash-card:hover, .mobcash-card:focus { border-color: #28a745; }
+    .mobcash-details {
+        display: none;
+        margin-top: 10px;
+        padding: 12px;
+        background: #0f111a;
+        border-radius: 6px;
+    }
+    .mobcash-details p { margin: 6px 0; color: #ccc; }
+    .mobcash-credit-form {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #3b3c68;
+    }
+    .mobcash-credit-form input { margin-bottom: 8px; }
+    .mobcash-credit-status {
+        min-height: 18px;
+        margin-top: 8px;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+    }
+
+    .support-layout {
+        display: grid;
+        grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.4fr);
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .support-users, .support-chat {
+        min-width: 0;
+        background: #0f111a;
+        border: 1px solid #3b3c68;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .support-live-status {
+        margin-top: 4px;
+        color: #8e90c6;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .support-users {
+        max-height: 360px;
+        overflow-y: auto;
+    }
+
+    .support-user {
+        width: 100%;
+        padding: 9px;
+        margin-bottom: 7px;
+        background: #222538;
+        color: #fff;
+        border: 1px solid #3b3c68;
+        border-radius: 6px;
+        text-align: left;
+        overflow-wrap: anywhere;
+        cursor: pointer;
+    }
+
+    .support-user.active { border-color: #4078c0; }
+
+    .support-chat {
+        display: flex;
+        flex-direction: column;
+        min-height: 280px;
+    }
+
+    .support-customer-info {
+        display: none;
+        background: #222538;
+        border: 1px solid #4078c0;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 10px 0;
+        overflow-wrap: anywhere;
+    }
+
+    .support-customer-info h3 { margin-bottom: 8px; }
+    .support-customer-info p { margin: 6px 0; color: #ccc; }
+    .support-customer-info strong { color: #fff; }
+
+    .support-messages {
+        flex: 1;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .support-message {
+        background: #222538;
+        border-radius: 7px;
+        padding: 9px;
+        margin-bottom: 8px;
+        overflow-wrap: anywhere;
+    }
+
+    .support-message.admin { border-left: 3px solid #28a745; }
+    .support-message.customer { border-left: 3px solid #4078c0; }
+    .support-message small { display: block; color: #8e90c6; margin-bottom: 5px; }
+    .support-message p { white-space: pre-wrap; }
+    .support-message img, .support-message video {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: 320px;
+        object-fit: contain;
+        margin-top: 8px;
+        border-radius: 6px;
+    }
+    .support-attachment-link {
+        display: inline-block;
+        margin-top: 8px;
+        color: #8dbbff;
+        overflow-wrap: anywhere;
+    }
+    .support-attachment-error {
+        margin-top: 8px;
+        color: #ffcc80;
+        font-size: 12px;
+    }
+
+    .support-reply { margin-top: 10px; }
+    .support-reply textarea {
+        width: 100%;
+        min-height: 75px;
+        resize: vertical;
+        padding: 10px;
+        background: #1a1d2d;
+        border: 1px solid #3b3c68;
+        border-radius: 7px;
+        color: #fff;
+        font: inherit;
+    }
+
+    @media (max-width: 420px) {
+        .support-layout { grid-template-columns: 1fr; }
+        .support-users { max-height: 130px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="admin-container">
+    <div class="header">
+        <h1>AVIATOR ADMIN</h1>
+        <p>User Balance Management System</p>
+    </div>
+
+    <!-- Search Section -->
+    <div class="form-group">
+        <label>Enter User ID</label>
+        <input type="text" id="searchId" placeholder="e.g. 12345678" />
+    </div>
+    <button id="searchBtn" class="btn btn-search">Find User</button>
+    <div id="statusText" class="status-msg"></div>
+
+    <!-- User Details Section (Hidden by default) -->
+    <div id="userCard" class="user-card">
+        <div class="user-info">
+            <span class="label">User ID:</span>
+            <span class="value" id="dispUserId">-</span>
+        </div>
+        <div class="user-info">
+            <span class="label">Currency:</span>
+            <span class="value" id="dispCurrency">-</span>
+        </div>
+        
+        <div class="balance-display" id="dispBalance">0.00</div>
+
+        <div class="verification-panel">
+            <div class="user-info">
+                <span class="label">ID Verification:</span>
+                <span class="value" id="dispVerification">Not verified</span>
+            </div>
+            <div class="action-buttons">
+                <button id="verifyIdBtn" class="btn btn-add" type="button">Verify ID</button>
+                <button id="removeVerificationBtn" class="btn btn-deduct" type="button">Remove Verification</button>
+            </div>
+            <div class="user-info" style="margin-top: 14px;">
+                <span class="label">Account Status:</span>
+                <span class="value" id="dispAccountLock">Unlocked</span>
+            </div>
+            <div class="action-buttons">
+                <button id="lockAccountBtn" class="btn btn-deduct" type="button">Lock Account</button>
+                <button id="unlockAccountBtn" class="btn btn-add" type="button">Unlock Account</button>
+            </div>
+            <p class="support-warning">Unverified or locked users cannot withdraw. Their pending withdrawal requests will be rejected with a reason.</p>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+            <label>Amount to Add / Deduct</label>
+            <input type="number" id="transAmount" placeholder="Enter Amount" min="1" step="0.01" />
+        </div>
+
+        <div class="action-buttons">
+            <button id="addBtn" class="btn btn-add">+ Add Money</button>
+            <button id="deductBtn" class="btn btn-deduct">- Deduct Money</button>
+        </div>
+    </div>
+
+    <button id="allUsersBtn" class="btn btn-history">All Users (ID & Balance)</button>
+    <div id="allUsersList" class="deposit-list" aria-live="polite"></div>
+
+    <button id="depositsBtn" class="btn btn-deposits">Crypto Deposits</button>
+    <div id="depositList" class="deposit-list" aria-live="polite"></div>
+    <button id="withdrawalsBtn" class="btn btn-deposits">Crypto Withdrawal Requests</button>
+    <div id="withdrawalList" class="deposit-list" aria-live="polite"></div>
+    <button id="historyBtn" class="btn btn-history">Crypto Deposit / Withdrawal History</button>
+    <div id="historyList" class="deposit-list" aria-live="polite"></div>
+
+    <section class="mobcash-panel">
+      <button id="mobcashBtn" class="btn btn-history" type="button">Mobcash Active සාමාජිකයින්</button>
+      <button id="mobcashRequestsBtn" class="btn btn-deposits" type="button">Mobcash Crypto Deposit Requests</button>
+      <div id="mobcashRequestsList" class="deposit-list" aria-live="polite"></div>
+      <div id="mobcashPanel" class="deposit-list" aria-live="polite">
+        <p class="support-warning">ආරක්ෂාව සඳහා මුරපද එකතු කිරීම හෝ ගබඩා කිරීම සිදු නොකරන්න. මෙම පිටුවට admin login සහ Supabase RLS ආරක්ෂාව යොදන්න.</p>
+        <div class="form-group">
+          <label for="mobcashEmail">Email</label>
+          <input id="mobcashEmail" type="email" autocomplete="off" placeholder="Email ලිපිනය" />
+        </div>
+        <div class="form-group">
+          <label for="mobcashPhone">දුරකථන අංකය</label>
+          <input id="mobcashPhone" type="tel" autocomplete="off" placeholder="දුරකථන අංකය" />
+        </div>
+        <div class="form-group">
+          <label for="mobcashUsername">Username</label>
+          <input id="mobcashUsername" type="text" autocomplete="off" placeholder="Username" />
+        </div>
+        <div class="form-group">
+          <label for="mobcashEposId">ePOS ID</label>
+          <input id="mobcashEposId" type="text" autocomplete="off" placeholder="ePOS ID" />
+        </div>
+        <div class="form-group">
+          <label for="mobcashFirstName">මුල් නම</label>
+          <input id="mobcashFirstName" type="text" autocomplete="off" placeholder="මුල් නම" />
+        </div>
+        <div class="form-group">
+          <label for="mobcashLastName">අවසන් නම</label>
+          <input id="mobcashLastName" type="text" autocomplete="off" placeholder="අවසන් නම" />
+        </div>
+        <button id="saveMobcashBtn" class="btn btn-add" type="button">Mobcash Active කරන්න</button>
+        <div id="mobcashList" class="deposit-list" style="display:block" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="support-panel">
+      <button id="supportBtn" class="btn btn-history">Customer Support Inbox</button>
+      <p class="support-warning">Security warning: this page uses a public Supabase key. If your database grants public access, anyone can view messages and send replies. Do not use this as a private admin inbox.</p>
+      <div id="supportPanel" class="deposit-list" aria-live="polite">
+        <button id="refreshSupportBtn" class="btn btn-search">Refresh conversations</button>
+        <p id="supportRealtimeStatus" class="support-live-status" aria-live="polite">Live updates not connected</p>
+        <div class="support-layout">
+          <div id="supportUsers" class="support-users">Open the inbox to load conversations.</div>
+          <div class="support-chat">
+            <strong id="supportConversationTitle">Select a customer conversation</strong>
+            <div id="supportCustomerInfo" class="support-customer-info" aria-live="polite"></div>
+            <div id="supportMessages" class="support-messages" aria-live="polite"></div>
+            <div class="support-reply">
+              <textarea id="supportReplyText" placeholder="Write a reply..." aria-label="Reply message"></textarea>
+              <button id="sendSupportReplyBtn" class="btn btn-add" style="margin-top: 8px;" disabled>Send Reply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // --- SUPABASE INITIALIZATION (Error Fixed) ---
+    const adminSupabaseUrl = 'https://vtobhkwzvwaaxxtikxfq.supabase.co';
+    const adminSupabaseKey = 'sb_publishable_839dZUvDqZvNy9n5HtIttA_Nz3cWsdn';
+    
+    // Changed variable name to 'adminSupabase' to avoid conflicts
+    const adminSupabase = window.supabase.createClient(adminSupabaseUrl, adminSupabaseKey);
+    // ---------------------------------------------
+
+    const searchIdInput = document.getElementById('searchId');
+    const searchBtn = document.getElementById('searchBtn');
+    const statusText = document.getElementById('statusText');
+    const userCard = document.getElementById('userCard');
+    
+    const dispUserId = document.getElementById('dispUserId');
+    const dispCurrency = document.getElementById('dispCurrency');
+    const dispBalance = document.getElementById('dispBalance');
+    
+    const transAmount = document.getElementById('transAmount');
+    const addBtn = document.getElementById('addBtn');
+    const deductBtn = document.getElementById('deductBtn');
+    const dispVerification = document.getElementById('dispVerification');
+    const verifyIdBtn = document.getElementById('verifyIdBtn');
+    const removeVerificationBtn = document.getElementById('removeVerificationBtn');
+    const dispAccountLock = document.getElementById('dispAccountLock');
+    const lockAccountBtn = document.getElementById('lockAccountBtn');
+    const unlockAccountBtn = document.getElementById('unlockAccountBtn');
+
+    let currentUser = null;
+
+    function showStatus(msg, color = "#ccc") {
+        statusText.style.color = color;
+        statusText.textContent = msg;
+        setTimeout(() => statusText.textContent = "", 4000);
+    }
+
+    // 1. Search User Function
+    async function findUser() {
+        const id = searchIdInput.value.trim();
+        if (!id) {
+            showStatus("Please enter a User ID", "#ff9800");
+            return;
+        }
+
+        showStatus("Searching...", "#4078c0");
+        userCard.style.display = "none";
+        currentUser = null;
+
+        const { data, error } = await adminSupabase
+            .from('players')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !data) {
+            showStatus("User not found!", "#e50b2e");
+            console.error(error);
+        } else {
+            currentUser = data;
+            dispUserId.textContent = data.id;
+            dispCurrency.textContent = data.currency || "LKR";
+            dispBalance.textContent = (data.balance || 0).toFixed(2) + " " + (data.currency || "LKR");
+            dispVerification.textContent = data.profile_verified === true ? 'Verified' : 'Not verified';
+            verifyIdBtn.disabled = data.profile_verified === true;
+            removeVerificationBtn.disabled = data.profile_verified !== true;
+            dispAccountLock.textContent = data.profile_locked === true ? 'Locked' : 'Unlocked';
+            lockAccountBtn.disabled = data.profile_locked === true;
+            unlockAccountBtn.disabled = data.profile_locked !== true;
+            
+            showStatus("User found successfully!", "#28a745");
+            userCard.style.display = "block";
+            transAmount.value = "";
+        }
+    }
+
+    // 2. Update Balance Function
+    async function processTransaction(type) {
+        if (!currentUser) return;
+        
+        const amount = parseFloat(transAmount.value);
+        if (isNaN(amount) || amount <= 0) {
+            showStatus("Please enter a valid amount", "#ff9800");
+            return;
+        }
+
+        let newBalance = parseFloat(currentUser.balance || 0);
+
+        if (type === 'add') {
+            newBalance += amount;
+        } else if (type === 'deduct') {
+            if (newBalance < amount) {
+                showStatus("Error: Insufficient user balance!", "#e50b2e");
+                return;
+            }
+            newBalance -= amount;
+        }
+
+        showStatus("Processing...", "#4078c0");
+        
+        // Update Supabase Database
+        const { error } = await adminSupabase
+            .from('players')
+            .update({ balance: newBalance })
+            .eq('id', currentUser.id);
+
+        if (error) {
+            showStatus("Failed to update balance!", "#e50b2e");
+            console.error(error);
+        } else {
+            // Update local UI
+            currentUser.balance = newBalance;
+            dispBalance.textContent = newBalance.toFixed(2) + " " + (currentUser.currency || "LKR");
+            transAmount.value = "";
+            showStatus(`Successfully ${type === 'add' ? 'added' : 'deducted'} money!`, "#28a745");
+        }
+    }
+
+    async function setUserIdVerification(verified) {
+        if (!currentUser) return;
+        verifyIdBtn.disabled = true;
+        removeVerificationBtn.disabled = true;
+        const { error } = await adminSupabase
+            .from('players')
+            .update({ profile_verified: verified })
+            .eq('id', currentUser.id);
+
+        if (error) {
+            showStatus('Could not update ID verification. Ensure players.profile_verified exists and UPDATE is allowed.', '#e50b2e');
+            console.error(error);
+            verifyIdBtn.disabled = currentUser.profile_verified === true;
+            removeVerificationBtn.disabled = currentUser.profile_verified !== true;
+            return;
+        }
+
+        currentUser.profile_verified = verified;
+        dispVerification.textContent = verified ? 'Verified' : 'Not verified';
+        verifyIdBtn.disabled = verified;
+        removeVerificationBtn.disabled = !verified;
+        showStatus(verified ? 'User ID verified.' : 'ID verification removed; withdrawals will require documents.', '#28a745');
+    }
+
+    verifyIdBtn.addEventListener('click', () => setUserIdVerification(true));
+    removeVerificationBtn.addEventListener('click', () => setUserIdVerification(false));
+
+    async function setUserAccountLock(locked) {
+        if (!currentUser) return;
+        lockAccountBtn.disabled = true;
+        unlockAccountBtn.disabled = true;
+        const { error } = await adminSupabase
+            .from('players')
+            .update({ profile_locked: locked })
+            .eq('id', currentUser.id);
+
+        if (error) {
+            showStatus('Could not update account lock. Ensure players.profile_locked exists and UPDATE is allowed.', '#e50b2e');
+            console.error(error);
+            lockAccountBtn.disabled = currentUser.profile_locked === true;
+            unlockAccountBtn.disabled = currentUser.profile_locked !== true;
+            return;
+        }
+
+        currentUser.profile_locked = locked;
+        dispAccountLock.textContent = locked ? 'Locked' : 'Unlocked';
+        lockAccountBtn.disabled = locked;
+        unlockAccountBtn.disabled = !locked;
+        showStatus(locked ? 'Account locked; withdrawals will be rejected.' : 'Account unlocked; withdrawals can proceed normally if ID is verified.', '#28a745');
+    }
+
+    lockAccountBtn.addEventListener('click', () => setUserAccountLock(true));
+    unlockAccountBtn.addEventListener('click', () => setUserAccountLock(false));
+
+    // This list intentionally excludes passwords and sensitive profile fields.
+    const allUsersBtn = document.getElementById('allUsersBtn');
+    const allUsersList = document.getElementById('allUsersList');
+
+    async function loadAllUsers() {
+        allUsersList.replaceChildren();
+        const loading = document.createElement('p');
+        loading.textContent = 'Loading users...';
+        allUsersList.appendChild(loading);
+
+        const { data, error } = await adminSupabase
+            .from('players')
+            .select('id, balance, currency')
+            .order('id', { ascending: true });
+
+        allUsersList.replaceChildren();
+        if (error) {
+            const message = document.createElement('p');
+            message.textContent = 'Could not load users. Check players SELECT permissions and Supabase RLS policies.';
+            allUsersList.appendChild(message);
+            console.error(error);
+            return;
+        }
+        if (!data || data.length === 0) {
+            const message = document.createElement('p');
+            message.textContent = 'No users found.';
+            allUsersList.appendChild(message);
+            return;
+        }
+
+        data.forEach((user) => {
+            const item = document.createElement('div');
+            item.className = 'deposit-item';
+            const userLine = document.createElement('p');
+            userLine.textContent = 'User ID: ';
+            const userValue = document.createElement('strong');
+            userValue.textContent = String(user.id ?? '-');
+            userLine.appendChild(userValue);
+            const balanceLine = document.createElement('p');
+            balanceLine.textContent = 'Balance: ';
+            const balanceValue = document.createElement('strong');
+            const balance = Number(user.balance);
+            balanceValue.textContent = (Number.isFinite(balance) ? balance.toFixed(2) : '0.00') + ' ' + (user.currency || 'LKR');
+            balanceLine.appendChild(balanceValue);
+            item.append(userLine, balanceLine);
+            allUsersList.appendChild(item);
+        });
+    }
+
+    allUsersBtn.addEventListener('click', async () => {
+        const isVisible = allUsersList.style.display === 'block';
+        allUsersList.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) await loadAllUsers();
+    });
+
+    // Deposit requests are expected in deposit_requests with:
+    // id, user_id, amount, receipt_url, status, and optional created_at.
+    const depositsBtn = document.getElementById('depositsBtn');
+    const depositList = document.getElementById('depositList');
+    const withdrawalsBtn = document.getElementById('withdrawalsBtn');
+    const withdrawalList = document.getElementById('withdrawalList');
+    const historyBtn = document.getElementById('historyBtn');
+    const historyList = document.getElementById('historyList');
+
+    async function loadDepositRequests(mode = 'pending') {
+        const list = mode === 'pending' ? depositList : historyList;
+        list.replaceChildren();
+        const loading = document.createElement('p');
+        loading.textContent = mode === 'pending' ? 'Loading deposit requests...' : 'Loading history...';
+        list.appendChild(loading);
+
+        let query = adminSupabase
+            .from('deposit_requests')
+            .select('*');
+        query = mode === 'pending'
+            ? query.eq('status', 'pending')
+            : query.in('status', ['approved', 'rejected']);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        list.replaceChildren();
+        if (error) {
+            const message = document.createElement('p');
+            message.textContent = 'Could not load crypto deposit requests. Check the table name, columns, and Supabase RLS policies.';
+            list.appendChild(message);
+            console.error(error);
+            if (mode === 'history') await appendWithdrawalHistory(list);
+            return;
+        }
+
+        if ((!data || data.length === 0) && mode === 'pending') {
+            const emptyMessage = document.createElement('p');
+            emptyMessage.textContent = 'No pending crypto deposit requests.';
+            list.appendChild(emptyMessage);
+            return;
+        }
+        if (!data || data.length === 0) {
+            const emptyMessage = document.createElement('p');
+            emptyMessage.textContent = 'No crypto deposit history.';
+            list.appendChild(emptyMessage);
+        }
+
+        (data || []).forEach((request) => {
+            const item = document.createElement('div');
+            item.className = 'deposit-item';
+
+            const userLine = document.createElement('p');
+            userLine.textContent = 'User ID: ';
+            const userValue = document.createElement('strong');
+            userValue.textContent = request.user_id ?? '-';
+            userLine.appendChild(userValue);
+
+            const amountLine = document.createElement('p');
+            amountLine.textContent = 'Amount: ';
+            const amountValue = document.createElement('strong');
+            const depositAmount = Number(request.amount);
+            amountValue.textContent = Number.isFinite(depositAmount) ? '$' + depositAmount.toFixed(2) : '-';
+            amountLine.appendChild(amountValue);
+
+            item.append(userLine, amountLine);
+
+            if (mode === 'history') {
+                const statusLine = document.createElement('p');
+                statusLine.textContent = 'Status: ';
+                const statusValue = document.createElement('strong');
+                statusValue.textContent = request.status === 'approved' ? 'Approved' : 'Rejected';
+                statusLine.appendChild(statusValue);
+                item.appendChild(statusLine);
+            }
+
+            const receiptValue = [
+                request.receipt_url,
+                request.receipt_image,
+                request.receipt_path,
+                request.image_url,
+                request.photo_url,
+                request.screenshot_url,
+                request.receipt,
+                request.proof_url
+            ].find((value) => typeof value === 'string' && value.trim());
+
+            if (receiptValue) {
+                const receiptUrl = receiptValue.trim();
+                const safeUrl = /^https?:\/\//i.test(receiptUrl) || /^data:image\//i.test(receiptUrl);
+                if (safeUrl) {
+                    const receipt = document.createElement('a');
+                    receipt.className = 'deposit-receipt';
+                    receipt.href = receiptUrl;
+                    receipt.target = '_blank';
+                    receipt.rel = 'noopener noreferrer';
+                    receipt.textContent = 'View receipt';
+
+                    const image = document.createElement('img');
+                    image.src = receiptUrl;
+                    image.alt = 'Deposit receipt photo';
+                    image.onerror = () => {
+                        image.remove();
+                        receipt.textContent = 'Could not load receipt image';
+                    };
+                    receipt.appendChild(image);
+                    item.appendChild(receipt);
+                } else {
+                    const receiptText = document.createElement('p');
+                    receiptText.textContent = 'Receipt path is not a public URL: ' + receiptUrl;
+                    item.appendChild(receiptText);
+                }
+            } else {
+                const receiptText = document.createElement('p');
+                receiptText.textContent = 'No receipt photo URL was saved for this request.';
+                item.appendChild(receiptText);
+            }
+
+            if (mode === 'pending') {
+                const actions = document.createElement('div');
+                actions.className = 'deposit-actions';
+                ['approved', 'rejected'].forEach((decision) => {
+                    const button = document.createElement('button');
+                    button.className = 'btn ' + (decision === 'approved' ? 'btn-approve' : 'btn-reject');
+                    button.textContent = decision === 'approved' ? 'Approve' : 'Reject';
+                    button.addEventListener('click', () => updateDepositStatus(request, decision, button));
+                    actions.appendChild(button);
+                });
+                item.appendChild(actions);
+            }
+            list.appendChild(item);
+        });
+
+        if (mode === 'history') await appendWithdrawalHistory(list);
+    }
+
+    async function updateDepositStatus(request, status, button) {
+        button.disabled = true;
+        let newBalance = null;
+        let playerId = null;
+
+        if (status === 'approved') {
+            const depositUsd = Number(request.amount);
+            if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
+                button.disabled = false;
+                showStatus('Invalid deposit amount.', '#e50b2e');
+                return;
+            }
+
+            const { data: player, error: playerError } = await adminSupabase
+                .from('players')
+                .select('id, balance, currency')
+                .eq('id', request.user_id)
+                .single();
+
+            if (playerError || !player) {
+                button.disabled = false;
+                showStatus('Could not find the deposit user.', '#e50b2e');
+                console.error(playerError);
+                return;
+            }
+
+            const currency = String(player.currency || 'LKR').toUpperCase();
+            let creditAmount;
+            if (currency === 'LKR') {
+                creditAmount = depositUsd * 325;
+            } else if (currency === 'USD') {
+                creditAmount = depositUsd;
+            } else {
+                button.disabled = false;
+                showStatus(`Cannot convert deposits to ${currency}.`, '#e50b2e');
+                return;
+            }
+
+            playerId = player.id;
+            newBalance = Number(player.balance || 0) + creditAmount;
+        }
+
+        // Do not request the updated row here: a pending-only SELECT policy may
+        // hide it immediately after its status changes.
+        const { error: statusError } = await adminSupabase
+            .from('deposit_requests')
+            .update({ status })
+            .eq('id', request.id)
+            .eq('status', 'pending');
+
+        if (statusError) {
+            button.disabled = false;
+            showStatus(`Could not update request: ${statusError.message}`, '#e50b2e');
+            console.error(statusError);
+            return;
+        }
+
+        // Check whether it is still visible as pending. If so, RLS or a stale
+        // request prevented the status change; do not credit the balance.
+        const { data: stillPending, error: verifyError } = await adminSupabase
+            .from('deposit_requests')
+            .select('id')
+            .eq('id', request.id)
+            .eq('status', 'pending')
+            .maybeSingle();
+
+        if (verifyError || stillPending) {
+            button.disabled = false;
+            showStatus(
+                verifyError
+                    ? `Could not verify request status: ${verifyError.message}`
+                    : 'Request is still pending. Check the Supabase RLS UPDATE policy for deposit_requests.',
+                '#e50b2e'
+            );
+            if (verifyError) console.error(verifyError);
+            return;
+        }
+
+        if (status === 'approved') {
+            const { error: balanceError } = await adminSupabase
+                .from('players')
+                .update({ balance: newBalance })
+                .eq('id', playerId);
+
+            if (balanceError) {
+                await adminSupabase
+                    .from('deposit_requests')
+                    .update({ status: 'pending' })
+                    .eq('id', request.id)
+                    .eq('status', 'approved');
+                button.disabled = false;
+                showStatus('Could not credit the user balance; request was returned to pending.', '#e50b2e');
+                console.error(balanceError);
+                return;
+            }
+        }
+
+        showStatus(status === 'approved' ? 'Deposit approved and balance credited.' : 'Deposit rejected.', '#28a745');
+        await loadDepositRequests('pending');
+        if (historyList.style.display === 'block') await loadDepositRequests('history');
+    }
+
+    function getWithdrawalAmount(request) {
+        return Number(request.amount ?? request.amount_lkr ?? request.withdrawal_amount ?? request.requested_amount);
+    }
+
+    function getWithdrawalWallet(request) {
+        const isAddress = (value) => typeof value === 'string' && value.trim().length > 0;
+        const preferredFields = [
+            request.destination?.walletAddress,
+            request.destination?.wallet_address,
+            request.wallet_address,
+            request.walletAddress,
+            request.withdrawal_address,
+            request.withdrawalAddress,
+            request.withdrawal_wallet_address,
+            request.crypto_wallet_address,
+            request.crypto_address,
+            request.payout_address,
+            request.recipient_address,
+            request.receiver_address,
+            request.usdt_address,
+            request.trc20_address,
+            request.wallet,
+            request.address
+        ];
+        const preferred = preferredFields.find(isAddress);
+        if (preferred) return preferred.trim();
+
+        // Wallet details may use app-specific names or be nested in a JSON value.
+        const addressKey = /(wallet|address|addr|payout|recipient|receiver|destination)/i;
+        const nonAddressKey = /(type|network|currency|coin|symbol|status|label)/i;
+        const findAddress = (value, depth = 0) => {
+            if (typeof value === 'string' && depth < 3) {
+                try { return findAddress(JSON.parse(value), depth + 1); } catch (_) { return ''; }
+            }
+            if (!value || typeof value !== 'object' || depth > 4) return '';
+            for (const [key, entry] of Object.entries(value)) {
+                if (addressKey.test(key) && !nonAddressKey.test(key) && isAddress(entry)) return entry.trim();
+            }
+            for (const entry of Object.values(value)) {
+                const nested = findAddress(entry, depth + 1);
+                if (nested) return nested;
+            }
+            return '';
+        };
+        return findAddress(request);
+    }
+
+    async function findPlayerWithdrawalWallet(request) {
+        const userId = request.user_id ?? request.player_id ?? request.uid;
+        if (userId === undefined || userId === null) return '';
+        const { data, error } = await adminSupabase
+            .from('players')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+        if (error) {
+            console.error('Could not look up the user wallet:', error);
+            return '';
+        }
+        return data ? getWithdrawalWallet(data) : '';
+    }
+
+    function makeWithdrawalItem(request, showActions) {
+        const item = document.createElement('div');
+        item.className = 'deposit-item';
+
+        const addLine = (label, value) => {
+            const line = document.createElement('p');
+            line.textContent = label + ': ';
+            const strong = document.createElement('strong');
+            strong.textContent = value;
+            line.appendChild(strong);
+            item.appendChild(line);
+        };
+
+        const userId = request.user_id ?? request.player_id ?? request.uid ?? '-';
+        const amount = getWithdrawalAmount(request);
+        addLine('Withdrawal · User ID', String(userId));
+        addLine('Amount', Number.isFinite(amount) ? 'LKR ' + amount.toFixed(2) : 'Invalid amount');
+
+        const walletLine = document.createElement('p');
+        walletLine.textContent = 'Wallet: ';
+        const walletValue = document.createElement('strong');
+        let wallet = getWithdrawalWallet(request);
+        walletValue.textContent = wallet || 'Looking up wallet...';
+        walletLine.appendChild(walletValue);
+        item.appendChild(walletLine);
+
+        const copyButton = document.createElement('button');
+        copyButton.type = 'button';
+        copyButton.className = 'btn btn-search';
+        copyButton.style.width = 'auto';
+        copyButton.style.padding = '7px 10px';
+        copyButton.setAttribute('aria-label', 'Copy wallet address');
+        copyButton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="vertical-align: -3px; margin-right: 5px; fill: currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>Copy wallet';
+        copyButton.disabled = !wallet;
+        copyButton.addEventListener('click', async () => {
+            if (!wallet) return;
+            try {
+                await navigator.clipboard.writeText(wallet);
+                showStatus('Wallet address copied.', '#28a745');
+            } catch (error) {
+                showStatus('Could not copy wallet address. Copy it manually.', '#ff9800');
+            }
+        });
+        item.appendChild(copyButton);
+
+        if (!wallet) {
+            findPlayerWithdrawalWallet(request).then((playerWallet) => {
+                wallet = playerWallet;
+                walletValue.textContent = wallet || 'Wallet not found in request or user profile';
+                copyButton.disabled = !wallet;
+            });
+        }
+
+        if (request.created_at) addLine('Requested', new Date(request.created_at).toLocaleString());
+        if (!showActions) addLine('Status', request.status || 'Unknown');
+        if (request.rejection_reason) addLine('Rejection reason', request.rejection_reason);
+        if (showActions) {
+            const actions = document.createElement('div');
+            actions.className = 'deposit-actions';
+            ['approved', 'rejected'].forEach((decision) => {
+                const button = document.createElement('button');
+                button.className = 'btn ' + (decision === 'approved' ? 'btn-approve' : 'btn-reject');
+                button.textContent = decision === 'approved' ? 'Approve / Paid' : 'Reject & Refund';
+                button.addEventListener('click', () => updateWithdrawalStatus(request, decision, button));
+                actions.appendChild(button);
+            });
+            item.appendChild(actions);
+        }
+        return item;
+    }
+
+    async function loadWithdrawalRequests(mode = 'pending') {
+        withdrawalList.replaceChildren();
+        const loading = document.createElement('p');
+        loading.textContent = 'Loading withdrawal requests...';
+        withdrawalList.appendChild(loading);
+
+        const { data, error } = await adminSupabase
+            .from('withdrawal_requests')
+            .select('*')
+            .eq('status', mode === 'pending' ? 'pending' : 'approved')
+            .order('created_at', { ascending: false });
+
+        withdrawalList.replaceChildren();
+        if (error) {
+            const message = document.createElement('p');
+            message.textContent = 'Could not load withdrawal requests. Check the withdrawal_requests table, columns, and Supabase RLS policies.';
+            withdrawalList.appendChild(message);
+            console.error(error);
+            return;
+        }
+        if (!data || data.length === 0) {
+            const emptyMessage = document.createElement('p');
+            emptyMessage.textContent = 'No pending crypto withdrawal requests.';
+            withdrawalList.appendChild(emptyMessage);
+            return;
+        }
+        data.forEach((request) => withdrawalList.appendChild(makeWithdrawalItem(request, mode === 'pending')));
+    }
+
+    async function appendWithdrawalHistory(list) {
+        const { data, error } = await adminSupabase
+            .from('withdrawal_requests')
+            .select('*')
+            .in('status', ['approved', 'rejected'])
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            const message = document.createElement('p');
+            message.textContent = 'Could not load withdrawal history. Check withdrawal_requests SELECT/RLS permissions.';
+            list.appendChild(message);
+            console.error(error);
+            return;
+        }
+        (data || []).forEach((request) => list.appendChild(makeWithdrawalItem(request, false)));
+    }
+
+    async function updateWithdrawalStatus(request, status, button) {
+        button.disabled = true;
+        const amount = getWithdrawalAmount(request);
+        const userId = request.user_id ?? request.player_id ?? request.uid;
+        let player = null;
+        let newBalance = null;
+        let rejectionReason = '';
+
+        if (!request.id || userId === undefined || userId === null) {
+            button.disabled = false;
+            showStatus('Withdrawal request is missing its ID or user ID.', '#e50b2e');
+            return;
+        }
+
+        if (status === 'approved') {
+            const { data: account, error: accountError } = await adminSupabase
+                .from('players')
+                .select('id, profile_locked')
+                .eq('id', userId)
+                .maybeSingle();
+            if (accountError || !account) {
+                button.disabled = false;
+                showStatus('Could not check account lock; withdrawal was not approved.', '#e50b2e');
+                console.error(accountError);
+                return;
+            }
+            if (account.profile_locked === true) {
+                rejectionReason = 'Your account is temporarily locked. Please contact support to resolve the account lock before requesting a withdrawal.';
+                status = 'rejected';
+            }
+        }
+
+        if (status === 'rejected') {
+            if (!Number.isFinite(amount) || amount <= 0) {
+                button.disabled = false;
+                showStatus('Invalid withdrawal amount; cannot refund.', '#e50b2e');
+                return;
+            }
+            const result = await adminSupabase
+                .from('players')
+                .select('id, balance')
+                .eq('id', userId)
+                .maybeSingle();
+            player = result.data;
+            if (result.error || !player) {
+                button.disabled = false;
+                showStatus('Could not find the user wallet to refund the rejected withdrawal.', '#e50b2e');
+                console.error(result.error);
+                return;
+            }
+            newBalance = Number(player.balance || 0) + amount;
+        }
+
+        const updateValues = { status };
+        if (status === 'rejected') {
+            updateValues.rejection_reason = rejectionReason || request.rejection_reason || 'Withdrawal rejected by admin.';
+        }
+        const { error: updateError } = await adminSupabase
+            .from('withdrawal_requests')
+            .update(updateValues)
+            .eq('id', request.id)
+            .eq('status', 'pending');
+        if (updateError) {
+            button.disabled = false;
+            showStatus('Could not update withdrawal request: ' + updateError.message, '#e50b2e');
+            console.error(updateError);
+            return;
+        }
+
+        const { data: stillPending, error: verifyError } = await adminSupabase
+            .from('withdrawal_requests')
+            .select('id')
+            .eq('id', request.id)
+            .eq('status', 'pending')
+            .maybeSingle();
+        if (verifyError || stillPending) {
+            button.disabled = false;
+            showStatus(verifyError
+                ? 'Could not verify withdrawal status: ' + verifyError.message
+                : 'Withdrawal is still pending. Check the withdrawal_requests UPDATE policy.', '#e50b2e');
+            if (verifyError) console.error(verifyError);
+            return;
+        }
+
+        if (status === 'rejected') {
+            const { error: balanceError } = await adminSupabase
+                .from('players')
+                .update({ balance: newBalance })
+                .eq('id', player.id);
+            if (balanceError) {
+                await adminSupabase
+                    .from('withdrawal_requests')
+                    .update({ status: 'pending' })
+                    .eq('id', request.id)
+                    .eq('status', 'rejected');
+                button.disabled = false;
+                showStatus('Could not refund wallet; request was returned to pending.', '#e50b2e');
+                console.error(balanceError);
+                return;
+            }
+        }
+
+        showStatus(status === 'approved'
+            ? 'Withdrawal approved and marked paid.'
+            : 'Withdrawal rejected; amount refunded to user wallet.', '#28a745');
+        await loadWithdrawalRequests('pending');
+        if (historyList.style.display === 'block') await loadDepositRequests('history');
+    }
+
+    withdrawalsBtn.addEventListener('click', async () => {
+        const isVisible = withdrawalList.style.display === 'block';
+        withdrawalList.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) await loadWithdrawalRequests('pending');
+    });
+
+    depositsBtn.addEventListener('click', async () => {
+        const isVisible = depositList.style.display === 'block';
+        depositList.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) await loadDepositRequests('pending');
+    });
+
+    historyBtn.addEventListener('click', async () => {
+        const isVisible = historyList.style.display === 'block';
+        historyList.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) await loadDepositRequests('history');
+    });
+
+    // Mobcash member records: do not collect or store account passwords.
+    const mobcashBtn = document.getElementById('mobcashBtn');
+    const mobcashPanel = document.getElementById('mobcashPanel');
+    const mobcashList = document.getElementById('mobcashList');
+    const saveMobcashBtn = document.getElementById('saveMobcashBtn');
+    const mobcashFields = {
+        email: document.getElementById('mobcashEmail'),
+        phone: document.getElementById('mobcashPhone'),
+        username: document.getElementById('mobcashUsername'),
+        epos_id: document.getElementById('mobcashEposId'),
+        first_name: document.getElementById('mobcashFirstName'),
+        last_name: document.getElementById('mobcashLastName')
+    };
+    const mobcashRequestsBtn = document.getElementById('mobcashRequestsBtn');
+    const mobcashRequestsList = document.getElementById('mobcashRequestsList');
+
+    function firstRequestValue(record, keys) {
+        for (const key of keys) {
+            const value = record?.[key];
+            if (value !== null && value !== undefined && String(value).trim()) return String(value).trim();
+        }
+        return '';
+    }
+
+    function getMobcashRequestEpos(request) {
+        return firstRequestValue(request, [
+            'mobcash_epos_id', 'epos_id', 'eposId', 'receiver_epos_id',
+            'account_epos_id', 'recipient_epos_id', 'mobcash_account_id'
+        ]);
+    }
+
+    function isMobcashRequest(request) {
+        const method = [
+            request.network, request.payment_method, request.method,
+            request.provider, request.payment_type, request.deposit_method,
+            request.type, request.currency
+        ].filter(Boolean).join(' ').toLowerCase();
+        return method.includes('mobcash') || Boolean(getMobcashRequestEpos(request));
+    }
+
+    function findMobcashMemberForRequest(request, members) {
+        const eposId = getMobcashRequestEpos(request);
+        const requestUserId = String(request.user_id ?? request.player_id ?? request.uid ?? '');
+        return members.find((member) => {
+            if (eposId && String(member.epos_id ?? '') === eposId) return true;
+            if (!requestUserId) return false;
+            return ['id', 'user_id', 'auth_user_id', 'player_id', 'uid']
+                .some((key) => member[key] !== undefined && String(member[key]) === requestUserId);
+        }) || null;
+    }
+
+    async function loadMobcashDepositRequests() {
+        mobcashRequestsList.replaceChildren();
+        const loading = document.createElement('p');
+        loading.textContent = 'Mobcash requests load වෙමින්...';
+        mobcashRequestsList.appendChild(loading);
+
+        const [{ data: requests, error: requestError }, { data: members, error: memberError }] = await Promise.all([
+            adminSupabase.from('deposit_requests').select('*').order('created_at', { ascending: false }),
+            adminSupabase.from('mobcash_accounts').select('*')
+        ]);
+        mobcashRequestsList.replaceChildren();
+
+        if (requestError || memberError) {
+            const message = document.createElement('p');
+            message.textContent = 'Mobcash requests/accounts load කළ නොහැක. deposit_requests සහ mobcash_accounts SELECT/RLS policies පරීක්ෂා කරන්න.';
+            mobcashRequestsList.appendChild(message);
+            console.error(requestError || memberError);
+            return;
+        }
+
+        const mobcashRequests = (requests || []).filter(isMobcashRequest);
+        if (!mobcashRequests.length) {
+            mobcashRequestsList.textContent = 'Mobcash deposit requests නැත.';
+            return;
+        }
+
+        mobcashRequests.forEach((request) => {
+            const item = document.createElement('div');
+            item.className = 'deposit-item';
+            const member = findMobcashMemberForRequest(request, members || []);
+            const name = firstRequestValue(request, ['full_name', 'customer_name', 'name', 'username']) ||
+                [request.first_name, request.last_name].filter(Boolean).join(' ') ||
+                (member ? [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username || member.email : 'Name not provided');
+            const eposId = getMobcashRequestEpos(request) || String(member?.epos_id ?? 'Not provided');
+            const amount = Number(request.amount ?? request.deposit_amount ?? request.requested_amount);
+            const requestedAt = request.created_at ?? request.requested_at ?? request.submitted_at;
+
+            const addLine = (label, value) => {
+                const line = document.createElement('p');
+                line.textContent = label + ': ';
+                const strong = document.createElement('strong');
+                strong.textContent = value;
+                line.appendChild(strong);
+                item.appendChild(line);
+            };
+            addLine('Name', name);
+            addLine('ePOS ID', eposId);
+            addLine('Requested amount', Number.isFinite(amount) ? '$' + amount.toFixed(2) : 'Invalid amount');
+            addLine('Requested at', requestedAt ? new Date(requestedAt).toLocaleString() : 'Date unavailable');
+            addLine('Status', request.status || 'Unknown');
+
+            if (request.status === 'pending') {
+                const actions = document.createElement('div');
+                actions.className = 'deposit-actions';
+                ['approved', 'rejected'].forEach((decision) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'btn ' + (decision === 'approved' ? 'btn-approve' : 'btn-reject');
+                    button.textContent = decision === 'approved' ? 'Approve · Add to Mobcash' : 'Reject';
+                    button.addEventListener('click', () => updateMobcashDepositRequest(request, member, decision, button));
+                    actions.appendChild(button);
+                });
+                item.appendChild(actions);
+            }
+            mobcashRequestsList.appendChild(item);
+        });
+    }
+
+    async function updateMobcashDepositRequest(request, member, status, button) {
+        button.disabled = true;
+        const amountUsd = Number(request.amount ?? request.deposit_amount ?? request.requested_amount);
+        if (status === 'approved' && (!member || !member.epos_id)) {
+            button.disabled = false;
+            showStatus('இந்த request එකට අදාළ Mobcash ePOS ID/account එක සොයාගත නොහැක.', '#e50b2e');
+            return;
+        }
+        if (status === 'approved' && (!Number.isFinite(amountUsd) || amountUsd <= 0)) {
+            button.disabled = false;
+            showStatus('Request amount එක වැරදියි.', '#e50b2e');
+            return;
+        }
+
+        if (!request.id) {
+            button.disabled = false;
+            showStatus('Request එකේ id නැත; update කළ නොහැක.', '#e50b2e');
+            return;
+        }
+
+        const { error: statusError } = await adminSupabase
+            .from('deposit_requests')
+            .update({ status })
+            .eq('id', request.id)
+            .eq('status', 'pending');
+        if (statusError) {
+            button.disabled = false;
+            showStatus('Request status update අසාර්ථකයි: ' + statusError.message, '#e50b2e');
+            console.error(statusError);
+            return;
+        }
+
+        const { data: stillPending, error: verifyError } = await adminSupabase
+            .from('deposit_requests')
+            .select('id')
+            .eq('id', request.id)
+            .eq('status', 'pending')
+            .maybeSingle();
+        if (verifyError || stillPending) {
+            button.disabled = false;
+            showStatus(verifyError
+                ? 'Request status verify කළ නොහැක: ' + verifyError.message
+                : 'Request එක තවම pending. deposit_requests UPDATE/SELECT RLS policies පරීක්ෂා කරන්න.', '#e50b2e');
+            if (verifyError) console.error(verifyError);
+            return;
+        }
+
+        if (status === 'approved') {
+            const creditedLkr = amountUsd * 338;
+            const newBalance = Number(member.balance || 0) + creditedLkr;
+            const { data: updatedMember, error: balanceError } = await adminSupabase
+                .from('mobcash_accounts')
+                .update({ balance: newBalance })
+                .eq('epos_id', String(member.epos_id))
+                .eq('is_active', true)
+                .select('balance')
+                .maybeSingle();
+
+            if (balanceError || !updatedMember) {
+                await adminSupabase.from('deposit_requests')
+                    .update({ status: 'pending' })
+                    .eq('id', request.id)
+                    .eq('status', 'approved');
+                button.disabled = false;
+                showStatus('Mobcash balance එකට credit කළ නොහැකි වුණා; request නැවත pending කළා. UPDATE/RLS සහ active ePOS පරීක්ෂා කරන්න.', '#e50b2e');
+                console.error(balanceError);
+                return;
+            }
+        }
+
+        showStatus(status === 'approved'
+            ? `$${amountUsd.toFixed(2)} approve කර LKR ${(amountUsd * 338).toFixed(2)} Mobcash balance එකට එක් කළා.`
+            : 'Mobcash request එක rejected කළා.', '#28a745');
+        await loadMobcashDepositRequests();
+    }
+
+    mobcashRequestsBtn.addEventListener('click', async () => {
+        const isVisible = mobcashRequestsList.style.display === 'block';
+        mobcashRequestsList.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) await loadMobcashDepositRequests();
+    });
+
+    async function loadMobcashMembers() {
+        mobcashList.replaceChildren();
+        const loading = document.createElement('p');
+        loading.textContent = 'Active Mobcash සාමාජිකයින් load වෙමින්...';
+        mobcashList.appendChild(loading);
+
+        const { data, error } = await adminSupabase
+            .from('mobcash_accounts')
+            .select('id, email, phone, username, epos_id, first_name, last_name, balance, is_active, activated_at')
+            .eq('is_active', true)
+            .order('activated_at', { ascending: false });
+
+        mobcashList.replaceChildren();
+        if (error) {
+            const message = document.createElement('p');
+            message.textContent = 'දත්ත ලබාගත නොහැක. mobcash_accounts table එක සහ Supabase RLS policies පරීක්ෂා කරන්න.';
+            mobcashList.appendChild(message);
+            console.error(error);
+            return;
+        }
+        if (!data || data.length === 0) {
+            const message = document.createElement('p');
+            message.textContent = 'Active Mobcash සාමාජිකයින් නැත.';
+            mobcashList.appendChild(message);
+            return;
+        }
+
+        data.forEach((member) => {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'mobcash-card';
+            card.setAttribute('aria-expanded', 'false');
+            card.textContent = `${member.first_name || ''} ${member.last_name || ''} · ${member.username || member.email || 'Mobcash member'}`;
+
+            const details = document.createElement('div');
+            details.className = 'mobcash-details';
+            const addDetail = (label, value) => {
+                const line = document.createElement('p');
+                const strong = document.createElement('strong');
+                strong.textContent = label + ': ';
+                line.append(strong, document.createTextNode(value || 'සඳහන් කර නැත'));
+                details.appendChild(line);
+            };
+            addDetail('මුල් නම', member.first_name);
+            addDetail('අවසන් නම', member.last_name);
+            addDetail('Email', member.email);
+            addDetail('දුරකථන අංකය', member.phone);
+            addDetail('Username', member.username);
+            addDetail('ePOS ID', member.epos_id);
+            addDetail('Balance', `${Number(member.balance || 0).toFixed(2)} LKR`);
+            addDetail('තත්ත්වය', 'Active');
+            addDetail('Active කළ දිනය / වේලාව', member.activated_at ? new Date(member.activated_at).toLocaleString() : 'සඳහන් කර නැත');
+
+            const creditForm = document.createElement('div');
+            creditForm.className = 'mobcash-credit-form';
+            const creditAmount = document.createElement('input');
+            creditAmount.type = 'number';
+            creditAmount.min = '0.01';
+            creditAmount.step = '0.01';
+            creditAmount.placeholder = 'මුදල (LKR)';
+            creditAmount.setAttribute('aria-label', `${member.epos_id} සඳහා එකතු කරන LKR මුදල`);
+            const creditStatus = document.createElement('p');
+            creditStatus.className = 'mobcash-credit-status';
+            creditStatus.setAttribute('aria-live', 'polite');
+            const creditButton = document.createElement('button');
+            creditButton.type = 'button';
+            creditButton.className = 'btn btn-add';
+            creditButton.textContent = 'ePOS ID මඟින් මුදල් එකතු කරන්න';
+            creditButton.addEventListener('click', async () => {
+                const amount = Number(creditAmount.value);
+                creditStatus.textContent = '';
+                if (!Number.isFinite(amount) || amount <= 0) {
+                    creditStatus.textContent = 'කරුණාකර 0 ට වැඩි වලංගු මුදලක් ඇතුළත් කරන්න.';
+                    creditStatus.style.color = '#ff9800';
+                    return;
+                }
+                creditButton.disabled = true;
+                try {
+                    const newBalance = Number(member.balance || 0) + amount;
+                    const { data: updatedMember, error: creditError } = await adminSupabase
+                        .from('mobcash_accounts')
+                        .update({ balance: newBalance })
+                        .eq('epos_id', String(member.epos_id))
+                        .eq('is_active', true)
+                        .select('balance')
+                        .maybeSingle();
+
+                    if (creditError || !updatedMember) {
+                        const message = creditError?.message || 'Mobcash account was not updated. Check UPDATE permissions and RLS.';
+                        creditStatus.textContent = 'Mobcash balance එකට මුදල් එකතු කළ නොහැක: ' + message;
+                        creditStatus.style.color = '#e50b2e';
+                        showStatus('Mobcash balance update අසාර්ථකයි.', '#e50b2e');
+                        if (creditError) console.error(creditError);
+                        return;
+                    }
+
+                    member.balance = Number(updatedMember.balance);
+                    creditAmount.value = '';
+                    creditStatus.textContent = `LKR ${amount.toFixed(2)} Mobcash balance එකට සාර්ථකව එක් කළා.`;
+                    creditStatus.style.color = '#28a745';
+                    showStatus(`${member.epos_id} Mobcash balance එකට LKR ${amount.toFixed(2)} එකතු කළා.`, '#28a745');
+                    await loadMobcashMembers();
+
+                } catch (error) {
+                    creditStatus.textContent = 'මුදල් එකතු කිරීමේදී දෝෂයක්: ' + (error.message || 'නැවත උත්සාහ කරන්න.');
+                    creditStatus.style.color = '#e50b2e';
+                    console.error(error);
+                } finally {
+                    creditButton.disabled = false;
+                }
+            });
+            creditForm.append(creditAmount, creditButton, creditStatus);
+            details.appendChild(creditForm);
+
+            card.addEventListener('click', () => {
+                const opening = details.style.display !== 'block';
+                details.style.display = opening ? 'block' : 'none';
+                card.setAttribute('aria-expanded', String(opening));
+            });
+            mobcashList.append(card, details);
+        });
+    }
+
+    mobcashBtn.addEventListener('click', async () => {
+        const isVisible = mobcashPanel.style.display === 'block';
+        mobcashPanel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) await loadMobcashMembers();
+    });
+
+    saveMobcashBtn.addEventListener('click', async () => {
+        const member = Object.fromEntries(
+            Object.entries(mobcashFields).map(([column, input]) => [column, input.value.trim()])
+        );
+        if (Object.values(member).some((value) => !value)) {
+            showStatus('කරුණාකර සියලුම Mobcash විස්තර පුරවන්න.', '#ff9800');
+            return;
+        }
+
+        saveMobcashBtn.disabled = true;
+        try {
+            // Database unique indexes enforce uniqueness without repeated lookup queries.
+            const { error } = await adminSupabase
+                .from('mobcash_accounts')
+                .insert({ ...member, is_active: true, activated_at: new Date().toISOString() });
+
+            if (error) {
+                if (error.code === '23505') {
+                    const details = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+                    const duplicateLabels = [];
+                    if (details.includes('email')) duplicateLabels.push('Email');
+                    if (details.includes('username')) duplicateLabels.push('Username');
+                    if (details.includes('epos')) duplicateLabels.push('ePOS ID');
+                    showStatus(
+                        duplicateLabels.length
+                            ? 'දැනටමත් භාවිතයේ ඇති විස්තර: ' + duplicateLabels.join(', ')
+                            : 'Email, Username හෝ ePOS ID දැනටමත් භාවිතයේ ඇත.',
+                        '#ff9800'
+                    );
+                } else {
+                    showStatus('Mobcash විස්තර save කළ නොහැක: ' + (error.message || 'Table/RLS settings පරීක්ෂා කරන්න.'), '#e50b2e');
+                    console.error(error);
+                }
+                return;
+            }
+
+            Object.values(mobcashFields).forEach((input) => { input.value = ''; });
+            showStatus('Mobcash Active සාමාජිකයා සුරැකුණා.', '#28a745');
+            await loadMobcashMembers();
+        } catch (error) {
+            showStatus('Mobcash save කිරීමේදී දෝෂයක් ඇතිවුණා. Table/RLS settings පරීක්ෂා කරන්න.', '#e50b2e');
+            console.error(error);
+        } finally {
+            saveMobcashBtn.disabled = false;
+        }
+    });
+
+    // Customer support inbox (expects support_messages columns from the setup SQL).
+    const supportBtn = document.getElementById('supportBtn');
+    const supportPanel = document.getElementById('supportPanel');
+    const refreshSupportBtn = document.getElementById('refreshSupportBtn');
+    const supportUsers = document.getElementById('supportUsers');
+    const supportMessages = document.getElementById('supportMessages');
+    const supportConversationTitle = document.getElementById('supportConversationTitle');
+    const supportCustomerInfo = document.getElementById('supportCustomerInfo');
+    const supportReplyText = document.getElementById('supportReplyText');
+    const sendSupportReplyBtn = document.getElementById('sendSupportReplyBtn');
+    const supportRealtimeStatus = document.getElementById('supportRealtimeStatus');
+    let activeSupportUserId = null;
+    let lastSupportTap = { userId: null, time: 0 };
+    let supportThreads = [];
+    let supportRealtimeChannel = null;
+    let supportReloadTimer = null;
+
+    function connectSupportRealtime() {
+        if (supportRealtimeChannel) return;
+
+        supportRealtimeStatus.textContent = 'Connecting to live chat...';
+        supportRealtimeStatus.style.color = '#ffcc80';
+        supportRealtimeChannel = adminSupabase
+            .channel('support-messages-live')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'support_messages'
+            }, () => {
+                clearTimeout(supportReloadTimer);
+                supportReloadTimer = setTimeout(() => {
+                    if (supportPanel.style.display === 'block') loadSupportInbox();
+                }, 150);
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    supportRealtimeStatus.textContent = '● Live updates connected';
+                    supportRealtimeStatus.style.color = '#28a745';
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    supportRealtimeStatus.textContent = 'Live updates unavailable — check Supabase Realtime settings.';
+                    supportRealtimeStatus.style.color = '#ff9800';
+                }
+            });
+    }
+
+    function getSupportAttachment(entry) {
+        const fields = [
+            ['media_url', entry.media_url],
+            ['image_url', entry.image_url],
+            ['photo_url', entry.photo_url],
+            ['attachment_url', entry.attachment_url],
+            ['file_url', entry.file_url],
+            ['media_path', entry.media_path],
+            ['image_path', entry.image_path],
+            ['photo_path', entry.photo_path],
+            ['attachment_path', entry.attachment_path],
+            ['image', entry.image],
+            ['photo', entry.photo],
+            ['attachment', entry.attachment]
+        ];
+        const selected = fields.find(([, value]) =>
+            (typeof value === 'string' && value.trim()) ||
+            (value && typeof value === 'object' && (value.url || value.publicUrl || value.path))
+        );
+        if (!selected) return null;
+
+        const [field, rawValue] = selected;
+        const value = typeof rawValue === 'string'
+            ? rawValue.trim()
+            : String(rawValue.url || rawValue.publicUrl || rawValue.path).trim();
+        const hintedType = String(entry.media_type || rawValue.type || '').toLowerCase();
+        const isVideo = hintedType.includes('video') || /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(value);
+        const isImage = hintedType.includes('image') || hintedType.includes('photo') ||
+            /\.(png|jpe?g|gif|webp|bmp|svg)(\?|#|$)/i.test(value) ||
+            /^data:image\//i.test(value) || /image|photo/.test(field);
+
+        let url = value;
+        if (/^\/(storage\/v1\/)/i.test(url)) url = adminSupabaseUrl + url;
+        else if (/^storage\/v1\//i.test(url)) url = adminSupabaseUrl + '/' + url;
+
+        return { url, isImage, isVideo, isDirectUrl: /^https?:\/\//i.test(url) || /^data:(image|video)\//i.test(url) };
+    }
+
+    function renderSupportMessages() {
+        supportMessages.replaceChildren();
+        const thread = supportThreads.filter((entry) => String(entry.user_id) === String(activeSupportUserId));
+        thread.forEach((entry) => {
+            const bubble = document.createElement('div');
+            bubble.className = 'support-message ' + (entry.sender_role === 'admin' ? 'admin' : 'customer');
+
+            const meta = document.createElement('small');
+            const date = entry.created_at ? new Date(entry.created_at).toLocaleString() : '';
+            meta.textContent = (entry.sender_role === 'admin' ? 'Admin' : 'Customer') + (date ? ' · ' + date : '');
+            bubble.appendChild(meta);
+
+            if (entry.message) {
+                const text = document.createElement('p');
+                text.textContent = entry.message;
+                bubble.appendChild(text);
+            }
+
+            const attachment = getSupportAttachment(entry);
+            if (attachment) {
+                if (attachment.isDirectUrl && attachment.isVideo) {
+                    const video = document.createElement('video');
+                    video.src = attachment.url;
+                    video.controls = true;
+                    video.preload = 'metadata';
+                    bubble.appendChild(video);
+                } else if (attachment.isDirectUrl && attachment.isImage) {
+                    const image = document.createElement('img');
+                    image.src = attachment.url;
+                    image.alt = 'Customer support photo';
+                    image.loading = 'lazy';
+                    image.onerror = () => {
+                        image.remove();
+                        const error = document.createElement('p');
+                        error.className = 'support-attachment-error';
+                        error.textContent = 'Photo could not be loaded. Check that its Supabase Storage URL is public and valid.';
+                        bubble.appendChild(error);
+                    };
+                    bubble.appendChild(image);
+                } else if (attachment.isDirectUrl) {
+                    const link = document.createElement('a');
+                    link.className = 'support-attachment-link';
+                    link.href = attachment.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = 'Open attachment';
+                    bubble.appendChild(link);
+                } else {
+                    const error = document.createElement('p');
+                    error.className = 'support-attachment-error';
+                    error.textContent = 'Attachment path saved, but not a public URL: ' + attachment.url;
+                    bubble.appendChild(error);
+                }
+            }
+            supportMessages.appendChild(bubble);
+        });
+        supportMessages.scrollTop = supportMessages.scrollHeight;
+    }
+
+    async function loadSupportCustomerInfo(userId) {
+        supportCustomerInfo.style.display = 'block';
+        supportCustomerInfo.textContent = 'Loading account and personal information...';
+
+        // Support user IDs may be stored as either players.id or a linked user ID.
+        let player = null;
+        let playerError = null;
+        for (const key of ['id', 'user_id', 'auth_user_id', 'uid']) {
+            const result = await adminSupabase
+                .from('players')
+                .select('*')
+                .eq(key, userId)
+                .maybeSingle();
+            if (result.data) {
+                player = result.data;
+                break;
+            }
+            if (result.error) playerError = result.error;
+        }
+
+        supportCustomerInfo.replaceChildren();
+        const heading = document.createElement('h3');
+        heading.textContent = 'Personal Profile & Account';
+        supportCustomerInfo.appendChild(heading);
+
+        const addInfoLine = (label, value) => {
+            const line = document.createElement('p');
+            const strong = document.createElement('strong');
+            strong.textContent = `${label}: `;
+            const display = value === null || value === undefined || value === ''
+                ? 'Not provided'
+                : typeof value === 'object' ? JSON.stringify(value) : String(value);
+            line.append(strong, document.createTextNode(display));
+            supportCustomerInfo.appendChild(line);
+        };
+
+        if (!player) {
+            addInfoLine('Profile', playerError
+                ? 'Could not read the players record. Check Supabase SELECT/RLS permissions and the user ID link.'
+                : 'No matching players record found for this support user ID.');
+            if (playerError) console.error('Support profile lookup:', playerError);
+        } else {
+            const balance = player.balance ?? player.wallet_balance ?? player.wallet ?? player.credit;
+            addInfoLine('Balance', balance ?? 'Not provided');
+            addInfoLine('Currency', player.currency || 'LKR');
+
+            const fields = [
+                ['First Name', ['first_name', 'firstname', 'firstName', 'given_name', 'fname']],
+                ['Last Name', ['last_name', 'lastname', 'lastName', 'family_name', 'surname', 'lname']],
+                ['Date of Birth', ['date_of_birth', 'dateofbirth', 'dob', 'birth_date', 'birthday']],
+                ['Address', ['address', 'street_address', 'home_address', 'residential_address']],
+                ['NIC Number', ['nic_number', 'nic', 'national_id', 'national_id_number', 'identity_number']],
+                ['Profile Verified', ['profile_verified', 'is_verified', 'verified', 'verification_status']],
+                ['Locked', ['profile_locked', 'is_locked', 'locked', 'account_locked']]
+            ];
+            const shownKeys = new Set(['id', 'user_id', 'auth_user_id', 'uid', 'balance', 'wallet_balance', 'wallet', 'credit', 'currency']);
+            fields.forEach(([label, keys]) => {
+                const key = keys.find((candidate) => player[candidate] !== null && player[candidate] !== undefined && String(player[candidate]).trim() !== '');
+                if (key) {
+                    shownKeys.add(key);
+                    let value = player[key];
+                    if (label === 'Profile Verified' && typeof value === 'boolean') value = value ? 'Verified' : 'Not verified';
+                    if (label === 'Locked' && typeof value === 'boolean') value = value ? 'Locked' : 'Not locked';
+                    addInfoLine(label, value);
+                }
+            });
+
+            // Also show populated profile columns whose names differ from common conventions.
+            const privateKey = /(password|passwd|secret|token|api.?key|session|otp)/i;
+            Object.entries(player).forEach(([key, value]) => {
+                if (shownKeys.has(key) || value === null || value === undefined || value === '' || privateKey.test(key)) return;
+                if (typeof value === 'object' && !Array.isArray(value)) {
+                    Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+                        if (nestedValue !== null && nestedValue !== undefined && nestedValue !== '' && !privateKey.test(nestedKey)) {
+                            addInfoLine(nestedKey.replace(/[_-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()), nestedValue);
+                        }
+                    });
+                    return;
+                }
+                addInfoLine(key.replace(/[_-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()), value);
+            });
+        }
+
+        const depositsHeading = document.createElement('h3');
+        depositsHeading.textContent = 'Recent Deposits';
+        depositsHeading.style.marginTop = '12px';
+        supportCustomerInfo.appendChild(depositsHeading);
+        const { data: deposits, error: depositsError } = await adminSupabase
+            .from('deposit_requests')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (depositsError) {
+            addInfoLine('Deposits', 'Could not load records. Check deposit_requests SELECT/RLS permissions.');
+            console.error('Support deposit lookup:', depositsError);
+        } else if (!deposits || deposits.length === 0) {
+            addInfoLine('Deposits', 'No deposit records found for this user ID.');
+        } else {
+            deposits.forEach((deposit, index) => {
+                const amount = deposit.amount ?? deposit.deposit_amount ?? '-';
+                const status = deposit.status ?? 'status unavailable';
+                const date = deposit.created_at ? new Date(deposit.created_at).toLocaleString() : 'date unavailable';
+                addInfoLine(`Deposit ${index + 1}`, `${amount} · ${status} · ${date}`);
+            });
+        }
+    }
+
+    async function loadSupportInbox() {
+        supportUsers.textContent = 'Loading conversations...';
+        const { data, error } = await adminSupabase
+            .from('support_messages')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            supportUsers.textContent = 'Could not load support messages. Check the support_messages table columns and Supabase policies.';
+            supportMessages.replaceChildren();
+            console.error(error);
+            return;
+        }
+
+        supportThreads = data || [];
+        const latestByUser = new Map();
+        supportThreads.forEach((entry) => latestByUser.set(String(entry.user_id), entry));
+        const conversations = Array.from(latestByUser.entries()).sort((a, b) => {
+            return new Date(b[1].created_at || 0) - new Date(a[1].created_at || 0);
+        });
+
+        supportUsers.replaceChildren();
+        if (!conversations.length) {
+            supportUsers.textContent = 'No support messages yet.';
+            activeSupportUserId = null;
+            supportConversationTitle.textContent = 'Select a customer conversation';
+            supportMessages.replaceChildren();
+            sendSupportReplyBtn.disabled = true;
+            return;
+        }
+
+        conversations.forEach(([userId, latest]) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'support-user' + (String(activeSupportUserId) === userId ? ' active' : '');
+            const hasAttachment = Boolean(getSupportAttachment(latest));
+            const preview = latest.message || (hasAttachment ? '[photo/attachment]' : '[attachment]');
+            button.textContent = userId + ' · ' + preview.slice(0, 42);
+            button.addEventListener('click', () => {
+                const now = Date.now();
+                const isDoubleTap = lastSupportTap.userId === userId && now - lastSupportTap.time < 500;
+                lastSupportTap = { userId, time: isDoubleTap ? 0 : now };
+                activeSupportUserId = userId;
+                supportConversationTitle.textContent = 'Customer: ' + userId + ' · double-tap for account info';
+                sendSupportReplyBtn.disabled = false;
+                renderSupportMessages();
+
+                if (isDoubleTap) {
+                    supportConversationTitle.textContent = 'Customer: ' + userId;
+                    loadSupportCustomerInfo(userId);
+                } else {
+                    supportCustomerInfo.style.display = 'none';
+                    supportCustomerInfo.replaceChildren();
+                }
+            });
+            supportUsers.appendChild(button);
+        });
+
+        if (activeSupportUserId && conversations.some(([userId]) => userId === String(activeSupportUserId))) {
+            supportConversationTitle.textContent = 'Customer: ' + activeSupportUserId;
+            sendSupportReplyBtn.disabled = false;
+            renderSupportMessages();
+        } else {
+            activeSupportUserId = null;
+            supportConversationTitle.textContent = 'Select a customer conversation';
+            supportMessages.replaceChildren();
+            sendSupportReplyBtn.disabled = true;
+        }
+    }
+
+    async function sendSupportReply() {
+        if (!activeSupportUserId) return;
+        const message = supportReplyText.value.trim();
+        if (!message) {
+            showStatus('Write a reply message first.', '#ff9800');
+            return;
+        }
+
+        sendSupportReplyBtn.disabled = true;
+        const { error } = await adminSupabase
+            .from('support_messages')
+            .insert({
+                user_id: activeSupportUserId,
+                sender: 'admin',
+                sender_role: 'admin',
+                sender_type: 'admin',
+                is_admin: true,
+                message
+            });
+
+        sendSupportReplyBtn.disabled = false;
+        if (error) {
+            showStatus('Could not send reply: ' + error.message, '#e50b2e');
+            console.error(error);
+            return;
+        }
+        supportReplyText.value = '';
+        showStatus('Support reply sent.', '#28a745');
+        await loadSupportInbox();
+    }
+
+    supportBtn.addEventListener('click', async () => {
+        const isVisible = supportPanel.style.display === 'block';
+        supportPanel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+            connectSupportRealtime();
+            await loadSupportInbox();
+        }
+    });
+    refreshSupportBtn.addEventListener('click', loadSupportInbox);
+    sendSupportReplyBtn.addEventListener('click', sendSupportReply);
+
+    // Events
+    searchBtn.addEventListener('click', findUser);
+    addBtn.addEventListener('click', () => processTransaction('add'));
+    deductBtn.addEventListener('click', () => processTransaction('deduct'));
+
+    // Allow pressing "Enter" on the search box
+    searchIdInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') findUser();
+    });
+
+  </script>
+</body>
+</html>
