@@ -246,12 +246,45 @@
         color: #fff;
         border: 1px solid #3b3c68;
         border-radius: 8px;
-        text-align: left;
-        cursor: pointer;
         overflow-wrap: anywhere;
     }
 
-    .mobcash-card:hover, .mobcash-card:focus { border-color: #28a745; }
+    .mobcash-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mobcash-member-toggle {
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        background: none;
+        color: inherit;
+        border: 0;
+        text-align: left;
+        overflow-wrap: anywhere;
+        cursor: pointer;
+        font: inherit;
+    }
+
+    .mobcash-member-toggle:focus { outline: 2px solid #28a745; outline-offset: 4px; }
+
+    .mobcash-delete-btn {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        background: #e50b2e;
+        color: #fff;
+        border: 0;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 20px;
+    }
+
+    .mobcash-delete-btn:disabled { opacity: 0.6; cursor: wait; }
     .mobcash-details {
         display: none;
         margin-top: 10px;
@@ -1518,11 +1551,50 @@
         }
 
         data.forEach((member) => {
-            const card = document.createElement('button');
-            card.type = 'button';
+            const card = document.createElement('div');
             card.className = 'mobcash-card';
-            card.setAttribute('aria-expanded', 'false');
-            card.textContent = `${member.first_name || ''} ${member.last_name || ''} · ${member.username || member.email || 'Mobcash member'}`;
+
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'mobcash-card-header';
+            const toggleButton = document.createElement('button');
+            toggleButton.type = 'button';
+            toggleButton.className = 'mobcash-member-toggle';
+            toggleButton.setAttribute('aria-expanded', 'false');
+            toggleButton.textContent = `${member.first_name || ''} ${member.last_name || ''} · ${member.username || member.email || 'Mobcash member'}`;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'mobcash-delete-btn';
+            deleteButton.setAttribute('aria-label', `Delete Mobcash member ${member.epos_id || member.username || member.email || ''}`);
+            deleteButton.title = 'Delete Mobcash member';
+            deleteButton.textContent = '🗑';
+            deleteButton.addEventListener('click', async () => {
+                const confirmationCode = window.prompt('මෙම Mobcash සාමාජිකයාගේ දත්ත මකා දැමීමට 0000 ඇතුළත් කරන්න:');
+                if (confirmationCode !== '0000') {
+                    if (confirmationCode !== null) showStatus('වැරදි confirmation code එකක්.', '#ff9800');
+                    return;
+                }
+                if (!window.confirm('මෙම Mobcash සාමාජිකයාගේ database record එක ස්ථිරවම මකා දමන්නද?')) return;
+
+                deleteButton.disabled = true;
+                const { data: deletedRows, error: deleteError } = await adminSupabase
+                    .from('mobcash_accounts')
+                    .delete()
+                    .eq('id', member.id)
+                    .select('id');
+
+                if (deleteError || !deletedRows || deletedRows.length === 0) {
+                    deleteButton.disabled = false;
+                    showStatus('Mobcash දත්ත මකා දැමිය නොහැක. Supabase DELETE/SELECT RLS policies පරීක්ෂා කරන්න.', '#e50b2e');
+                    if (deleteError) console.error(deleteError);
+                    return;
+                }
+
+                showStatus('Mobcash සාමාජිකයාගේ database record එක මකා දැමුවා.', '#28a745');
+                await loadMobcashMembers();
+            });
+            cardHeader.append(toggleButton, deleteButton);
+            card.appendChild(cardHeader);
 
             const details = document.createElement('div');
             details.className = 'mobcash-details';
@@ -1604,10 +1676,10 @@
             creditForm.append(creditAmount, creditButton, creditStatus);
             details.appendChild(creditForm);
 
-            card.addEventListener('click', () => {
+            toggleButton.addEventListener('click', () => {
                 const opening = details.style.display !== 'block';
                 details.style.display = opening ? 'block' : 'none';
-                card.setAttribute('aria-expanded', String(opening));
+                toggleButton.setAttribute('aria-expanded', String(opening));
             });
             mobcashList.append(card, details);
         });
