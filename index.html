@@ -489,6 +489,23 @@
     <button id="allUsersBtn" class="btn btn-history">All Users (ID & Balance)</button>
     <div id="allUsersList" class="deposit-list" aria-live="polite"></div>
 
+    <section class="mobcash-panel" aria-labelledby="searchDeleteHeading">
+      <h2 id="searchDeleteHeading" style="color: #e50b2e; font-size: 18px; margin-bottom: 12px;">🔍 Search & Delete User</h2>
+      <div class="form-group">
+        <label for="searchUserId">User ID</label>
+        <input type="text" id="searchUserId" placeholder="Enter User ID..." autocomplete="off" />
+      </div>
+      <button id="searchUserBtn" class="btn btn-search" type="button">Search User</button>
+      <div id="userDetailsBox" class="user-card" style="margin-top: 15px;">
+        <div class="user-info"><span class="label">ID:</span><span id="u_id" class="value">-</span></div>
+        <div class="user-info"><span class="label">Name / Phone:</span><span id="u_name" class="value">Not available</span></div>
+        <div class="user-info"><span class="label">Balance:</span><span id="u_balance" class="value">0.00</span></div>
+        <button id="deleteDatabaseUserBtn" class="btn btn-deduct" type="button" style="margin-top: 15px;">Delete players record</button>
+      </div>
+      <p id="searchMsg" class="status-msg" aria-live="polite"></p>
+      <p class="support-warning">This removes only the row in <code>players</code>; it does not delete the Supabase Auth account or related records. Protect this action with authenticated admin access and restrictive Supabase RLS policies.</p>
+    </section>
+
     <button id="depositsBtn" class="btn btn-deposits">Crypto Deposits</button>
     <div id="depositList" class="deposit-list" aria-live="polite"></div>
     <button id="withdrawalsBtn" class="btn btn-deposits">Crypto Withdrawal Requests</button>
@@ -778,6 +795,106 @@
         allUsersList.style.display = isVisible ? 'none' : 'block';
         if (!isVisible) await loadAllUsers();
     });
+
+    const searchUserIdInput = document.getElementById('searchUserId');
+    const searchUserBtn = document.getElementById('searchUserBtn');
+    const userDetailsBox = document.getElementById('userDetailsBox');
+    const searchMsg = document.getElementById('searchMsg');
+    const deleteDatabaseUserBtn = document.getElementById('deleteDatabaseUserBtn');
+    let foundAdminUserId = null;
+
+    function setUserSearchMessage(message, color = '#ccc') {
+        searchMsg.textContent = message;
+        searchMsg.style.color = color;
+    }
+
+    async function searchAdminUser() {
+        const id = searchUserIdInput.value.trim();
+        userDetailsBox.style.display = 'none';
+        foundAdminUserId = null;
+        if (!id) {
+            setUserSearchMessage('Please enter a User ID.', '#ff9800');
+            return;
+        }
+
+        searchUserBtn.disabled = true;
+        setUserSearchMessage('Searching...', '#4078c0');
+        try {
+            // Read only the fields this panel needs; avoid exposing the full player row.
+            let result = await adminSupabase
+                .from('players')
+                .select('id, balance, currency, phone, name')
+                .eq('id', id)
+                .maybeSingle();
+
+            // Some installations do not have optional name/phone columns.
+            if (result.error) {
+                result = await adminSupabase
+                    .from('players')
+                    .select('id, balance, currency')
+                    .eq('id', id)
+                    .maybeSingle();
+            }
+
+            if (result.error || !result.data) {
+                setUserSearchMessage(result.error ? 'Could not search users. Check players SELECT permissions and RLS.' : 'User not found in the database.', '#e50b2e');
+                if (result.error) console.error(result.error);
+                return;
+            }
+
+            const user = result.data;
+            foundAdminUserId = user.id;
+            document.getElementById('u_id').textContent = String(user.id);
+            document.getElementById('u_name').textContent = user.phone || user.name || 'Not available';
+            const balance = Number(user.balance);
+            document.getElementById('u_balance').textContent = (Number.isFinite(balance) ? balance.toFixed(2) : '0.00') + ' ' + (user.currency || 'LKR');
+            userDetailsBox.style.display = 'block';
+            setUserSearchMessage('User found.', '#28a745');
+        } catch (error) {
+            setUserSearchMessage('Could not search users. Please try again.', '#e50b2e');
+            console.error(error);
+        } finally {
+            searchUserBtn.disabled = false;
+        }
+    }
+
+    async function deleteAdminUserRecord() {
+        if (foundAdminUserId === null || foundAdminUserId === undefined) return;
+        if (!window.confirm(`Delete the players record for user ${foundAdminUserId}? This does not delete the Auth account or related records.`)) return;
+
+        deleteDatabaseUserBtn.disabled = true;
+        setUserSearchMessage('Deleting players record...', '#4078c0');
+        try {
+            const { data, error } = await adminSupabase
+                .from('players')
+                .delete()
+                .eq('id', foundAdminUserId)
+                .select('id')
+                .maybeSingle();
+
+            if (error || !data) {
+                setUserSearchMessage(error ? 'Could not delete the record. Check players DELETE/SELECT permissions and RLS.' : 'No record was deleted. Check the user ID and RLS policies.', '#e50b2e');
+                if (error) console.error(error);
+                return;
+            }
+
+            userDetailsBox.style.display = 'none';
+            foundAdminUserId = null;
+            searchUserIdInput.value = '';
+            setUserSearchMessage('Players record deleted.', '#28a745');
+        } catch (error) {
+            setUserSearchMessage('Could not delete the record. Please try again.', '#e50b2e');
+            console.error(error);
+        } finally {
+            deleteDatabaseUserBtn.disabled = false;
+        }
+    }
+
+    searchUserBtn.addEventListener('click', searchAdminUser);
+    searchUserIdInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') searchAdminUser();
+    });
+    deleteDatabaseUserBtn.addEventListener('click', deleteAdminUserRecord);
 
     // Deposit requests are expected in deposit_requests with:
     // id, user_id, amount, receipt_url, status, and optional created_at.
