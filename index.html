@@ -860,30 +860,28 @@
 
     async function deleteAdminUserRecord() {
         if (foundAdminUserId === null || foundAdminUserId === undefined) return;
-        if (!window.confirm(`Delete the players record for user ${foundAdminUserId}? This does not delete the Auth account or related records.`)) return;
+        if (!window.confirm(`Are you completely sure? This will delete all data for user ${foundAdminUserId} and kick them out immediately!`)) return;
 
         deleteDatabaseUserBtn.disabled = true;
-        setUserSearchMessage('Deleting players record...', '#4078c0');
+        setUserSearchMessage('Wiping user data from all tables...', '#4078c0');
         try {
-            const { data, error } = await adminSupabase
-                .from('players')
-                .delete()
-                .eq('id', foundAdminUserId)
-                .select('id')
-                .maybeSingle();
+            // අලුතින් හදපු Database Function එක (RPC) Call කිරීම
+            const { error } = await adminSupabase.rpc('admin_wipe_user', {
+                user_id_to_delete: foundAdminUserId
+            });
 
-            if (error || !data) {
-                setUserSearchMessage(error ? 'Could not delete the record. Check players DELETE/SELECT permissions and RLS.' : 'No record was deleted. Check the user ID and RLS policies.', '#e50b2e');
-                if (error) console.error(error);
+            if (error) {
+                setUserSearchMessage('Could not delete user. Error: ' + error.message, '#e50b2e');
+                console.error(error);
                 return;
             }
 
             userDetailsBox.style.display = 'none';
             foundAdminUserId = null;
             searchUserIdInput.value = '';
-            setUserSearchMessage('Players record deleted.', '#28a745');
+            setUserSearchMessage('User completely wiped from database!', '#28a745');
         } catch (error) {
-            setUserSearchMessage('Could not delete the record. Please try again.', '#e50b2e');
+            setUserSearchMessage('Could not wipe user data. Please try again.', '#e50b2e');
             console.error(error);
         } finally {
             deleteDatabaseUserBtn.disabled = false;
