@@ -21,12 +21,13 @@
         color: #fff;
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: flex-start;
         min-height: 100vh;
         padding: 20px;
     }
 
     .admin-container {
+        display: block;
         background-color: #1a1d2d;
         width: 100%;
         max-width: 500px;
@@ -428,7 +429,7 @@
 </head>
 <body>
 
-  <div class="admin-container">
+  <div class="admin-container" id="adminContainer">
     <div class="header">
         <h1>AVIATOR ADMIN</h1>
         <p>User Balance Management System</p>
@@ -488,6 +489,17 @@
 
     <button id="allUsersBtn" class="btn btn-history">All Users (ID & Balance)</button>
     <div id="allUsersList" class="deposit-list" aria-live="polite"></div>
+
+    <section class="mobcash-panel" aria-labelledby="referralHeading">
+      <h2 id="referralHeading" style="color: #e50b2e; font-size: 18px; margin-bottom: 12px;">Referral Checker & Commission Release</h2>
+      <div class="form-group">
+        <label for="referralUserId">Referrer User ID</label>
+        <input type="text" id="referralUserId" placeholder="Enter referrer's User ID" autocomplete="off" />
+      </div>
+      <button id="checkReferralsBtn" class="btn btn-search" type="button">Check Referrals</button>
+      <p id="referralStatus" class="status-msg" aria-live="polite"></p>
+      <div id="referralResults" class="deposit-list" aria-live="polite"></div>
+    </section>
 
     <section class="mobcash-panel" aria-labelledby="searchDeleteHeading">
       <h2 id="searchDeleteHeading" style="color: #e50b2e; font-size: 18px; margin-bottom: 12px;">🔍 Search & Delete User</h2>
@@ -796,6 +808,125 @@
         if (!isVisible) await loadAllUsers();
     });
 
+    const referralUserIdInput = document.getElementById('referralUserId');
+    const checkReferralsBtn = document.getElementById('checkReferralsBtn');
+    const referralStatus = document.getElementById('referralStatus');
+    const referralResults = document.getElementById('referralResults');
+    function setReferralStatus(message, color = '#ccc') {
+        referralStatus.textContent = message;
+        referralStatus.style.color = color;
+    }
+
+    function addReferralLine(parent, label, value) {
+        const line = document.createElement('p');
+        line.textContent = label + ': ';
+        const strong = document.createElement('strong');
+        strong.textContent = value;
+        line.appendChild(strong);
+        parent.appendChild(line);
+    }
+
+    async function loadReferralSummary() {
+        const referrerId = referralUserIdInput.value.trim();
+        referralResults.style.display = 'block';
+        referralResults.replaceChildren();
+        if (!referrerId) {
+            setReferralStatus('Please enter a referrer User ID.', '#ff9800');
+            return;
+        }
+
+        checkReferralsBtn.disabled = true;
+        setReferralStatus('Loading referral details...', '#4078c0');
+        try {
+            const { data, error } = await adminSupabase.rpc('admin_referral_summary', {
+                p_referrer_user_id: referrerId
+            });
+            if (error) {
+                setReferralStatus('Could not load referrals. Use your separate allowlisted admin sign-in and check the referral RPC/RLS setup.', '#e50b2e');
+                console.error(error);
+                return;
+            }
+
+            addReferralLine(referralResults, 'Referral count', String(data?.referral_count ?? 0));
+            const referralsHeading = document.createElement('h3');
+            referralsHeading.textContent = 'Referred users';
+            referralsHeading.style.margin = '16px 0 10px';
+            referralResults.appendChild(referralsHeading);
+
+            const referrals = Array.isArray(data?.referrals) ? data.referrals : [];
+            if (!referrals.length) {
+                const empty = document.createElement('p');
+                empty.textContent = 'No referred users found for this ID.';
+                referralResults.appendChild(empty);
+            } else {
+                referrals.forEach((referral) => {
+                    const item = document.createElement('div');
+                    item.className = 'deposit-item';
+                    addReferralLine(item, 'User ID', String(referral.user_id ?? '-'));
+                    if (referral.email) addReferralLine(item, 'Email', String(referral.email));
+                    if (referral.commission_status) {
+                        const commission = Number(referral.commission_amount);
+                        const value = Number.isFinite(commission)
+                            ? `${commission.toFixed(2)} ${referral.currency || ''}`.trim()
+                            : referral.commission_status;
+                        addReferralLine(item, `Commission (${referral.commission_status})`, value);
+                    }
+                    referralResults.appendChild(item);
+                });
+            }
+
+            const pendingHeading = document.createElement('h3');
+            pendingHeading.textContent = 'Pending commissions';
+            pendingHeading.style.margin = '16px 0 10px';
+            referralResults.appendChild(pendingHeading);
+            const pending = Array.isArray(data?.pending_commissions) ? data.pending_commissions : [];
+            if (!pending.length) {
+                const empty = document.createElement('p');
+                empty.textContent = 'No pending referral commissions.';
+                referralResults.appendChild(empty);
+            } else {
+                pending.forEach((commission) => {
+                    const item = document.createElement('div');
+                    item.className = 'deposit-item';
+                    addReferralLine(item, 'Referred user ID', String(commission.referred_user_id ?? '-'));
+                    addReferralLine(item, 'Commission', `${Number(commission.commission_amount).toFixed(2)} ${commission.currency || ''}`.trim());
+                    const releaseButton = document.createElement('button');
+                    releaseButton.type = 'button';
+                    releaseButton.className = 'btn btn-approve';
+                    releaseButton.textContent = 'Release commission to main balance';
+                    releaseButton.addEventListener('click', async () => {
+                        if (!window.confirm(`Release ${commission.commission_amount} ${commission.currency} to the referrer's main balance?`)) return;
+                        releaseButton.disabled = true;
+                        const { error: releaseError } = await adminSupabase.rpc('admin_release_referral_commission', {
+                            p_commission_id: commission.id
+                        });
+                        if (releaseError) {
+                            releaseButton.disabled = false;
+                            setReferralStatus('Could not release commission: ' + releaseError.message, '#e50b2e');
+                            console.error(releaseError);
+                            return;
+                        }
+                        setReferralStatus('Commission released to the referrer main balance.', '#28a745');
+                        await loadReferralSummary();
+                    });
+                    item.appendChild(releaseButton);
+                    referralResults.appendChild(item);
+                });
+            }
+            setReferralStatus('Referral details loaded.', '#28a745');
+        } catch (error) {
+            setReferralStatus('Could not load referral details. Please try again.', '#e50b2e');
+            console.error(error);
+        } finally {
+            checkReferralsBtn.disabled = false;
+        }
+    }
+
+    checkReferralsBtn.addEventListener('click', loadReferralSummary);
+    referralUserIdInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') loadReferralSummary();
+    });
+
     const searchUserIdInput = document.getElementById('searchUserId');
     const searchUserBtn = document.getElementById('searchUserBtn');
     const userDetailsBox = document.getElementById('userDetailsBox');
@@ -1033,6 +1164,8 @@
         button.disabled = true;
         let newBalance = null;
         let playerId = null;
+        let approvedBalanceAmount = null;
+        let approvedBalanceCurrency = null;
 
         if (status === 'approved') {
             const depositUsd = Number(request.amount);
@@ -1069,13 +1202,20 @@
 
             playerId = player.id;
             newBalance = Number(player.balance || 0) + creditAmount;
+            approvedBalanceAmount = creditAmount;
+            approvedBalanceCurrency = currency;
         }
 
         // Do not request the updated row here: a pending-only SELECT policy may
         // hide it immediately after its status changes.
+        const requestUpdate = { status };
+        if (status === 'approved') {
+            requestUpdate.approved_balance_amount = approvedBalanceAmount;
+            requestUpdate.approved_balance_currency = approvedBalanceCurrency;
+        }
         const { error: statusError } = await adminSupabase
             .from('deposit_requests')
-            .update({ status })
+            .update(requestUpdate)
             .eq('id', request.id)
             .eq('status', 'pending');
 
